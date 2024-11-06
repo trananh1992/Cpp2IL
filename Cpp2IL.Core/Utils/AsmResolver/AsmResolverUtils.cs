@@ -13,8 +13,8 @@ namespace Cpp2IL.Core.Utils.AsmResolver;
 
 public static class AsmResolverUtils
 {
-    private static readonly Dictionary<string, TypeDefinition?> CachedTypeDefsByName = new();
-    private static readonly Dictionary<string, TypeSignature?> CachedTypeSignaturesByName = new();
+    private static readonly ConcurrentDictionary<string, TypeDefinition?> CachedTypeDefsByName = new();
+    private static readonly ConcurrentDictionary<string, TypeSignature?> CachedTypeSignaturesByName = new();
     private static readonly ConcurrentDictionary<AssemblyDefinition, ReferenceImporter> ImportersByAssembly = new();
 
     public static readonly ConcurrentDictionary<long, TypeDefinition> TypeDefsByIndex = new();
@@ -222,7 +222,13 @@ public static class AsmResolverUtils
                 && string.Equals(t.Definition.FullName.Replace('/', '.'), name, StringComparison.OrdinalIgnoreCase);
         });
 
-        return definedType?.GetExtraData<TypeDefinition>("AsmResolverType");
+        ret = definedType?.GetExtraData<TypeDefinition>("AsmResolverType");
+        
+        if (ret == null)
+            return null;
+        
+        CachedTypeDefsByName.TryAdd(key, ret);
+        return ret;
     }
 
     public static TypeSignature? TryLookupTypeSignatureByName(string? name, ReadOnlySpan<string> genericParameterNames = default)
@@ -238,7 +244,7 @@ public static class AsmResolverUtils
         var result = InternalTryLookupTypeSignatureByName(name, genericParameterNames);
 
         if (genericParameterNames.Length == 0)
-            CachedTypeSignaturesByName[key] = result;
+            CachedTypeSignaturesByName.TryAdd(key, result);
 
         return result;
     }
