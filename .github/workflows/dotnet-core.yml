@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4.1.0
         with:
-          dotnet-version: 6.x
+          dotnet-version: 9.x
       - name: Install dependencies
         run: dotnet restore -r win-x64
       - name: Build
@@ -79,7 +79,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4.1.0
         with:
-          dotnet-version: 6.x
+          dotnet-version: 9.x
       - id: git-vars
         name: Set up environment
         shell: bash
