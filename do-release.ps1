@@ -44,15 +44,15 @@ Write-Host "Building Cpp2IL release version $fullVersionString"
 
 Write-Host "    Building Cpp2IL - Windows, Standalone .NET"
 
-$null = dotnet publish -c Release -f "net7.0" -r "win-x64" /p:VersionSuffix=$version /p:PublishSingleFile=true --self-contained
+$null = dotnet publish -c Release -f "net9.0" -r "win-x64" /p:VersionSuffix=$version /p:PublishSingleFile=true --self-contained
 
 Write-Host "    Building Cpp2IL - Linux, Standalone .NET"
 
-$null = dotnet publish -c Release -f "net7.0" -r "linux-x64" /p:VersionSuffix=$version /p:PublishSingleFile=true --self-contained
+$null = dotnet publish -c Release -f "net9.0" -r "linux-x64" /p:VersionSuffix=$version /p:PublishSingleFile=true --self-contained
 
 Write-Host "    Building Cpp2IL - MacOS, Standalone .NET"
 
-$null = dotnet publish -c Release -f "net7.0" -r "osx-x64" /p:VersionSuffix=$version /p:PublishSingleFile=true --self-contained
+$null = dotnet publish -c Release -f "net9.0" -r "osx-x64" /p:VersionSuffix=$version /p:PublishSingleFile=true --self-contained
 
 Write-Host "    Building Cpp2IL - Windows, .NET Framework"
 
@@ -92,9 +92,9 @@ Write-Host "Moving files to artifacts directory"
 
 $null = New-Item -ItemType Directory -Force -Path $ArtifactsDir
 
-CopyAndRename "net7.0" "win-x64" "Windows" ".exe"
-CopyAndRename "net7.0" "linux-x64" "Linux" ""
-CopyAndRename "net7.0" "osx-x64" "OSX" ""
+CopyAndRename "net9.0" "win-x64" "Windows" ".exe"
+CopyAndRename "net9.0" "linux-x64" "Linux" ""
+CopyAndRename "net9.0" "osx-x64" "OSX" ""
 ZipAndRename "net472" "win-x64" "Windows-Netframework472" ".exe"
 
 Write-Host "Done!"

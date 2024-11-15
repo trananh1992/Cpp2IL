@@ -19,9 +19,19 @@ public static class StreamExtensions
         if (b == 240)
         {
             //Full Uint
+#if NET7_0_OR_GREATER
+            Span<byte> buffer = stackalloc byte[4];
+            stream.ReadExactly(buffer);
+            return BitConverter.ToUInt32(buffer);
+#elif NET5_0_OR_GREATER
+            Span<byte> buffer = stackalloc byte[4];
+            stream.Read(buffer);
+            return BitConverter.ToUInt32(buffer);
+#else
             var buffer = new byte[4];
             stream.Read(buffer, 0, 4);
             return BitConverter.ToUInt32(buffer, 0);
+#endif
         }
 
         //Special constant values
