@@ -183,6 +183,8 @@ public class DiffableCsOutputFormat : Cpp2IlOutputFormat
 
             if (defaultValue is string stringDefaultValue)
                 sb.Append('"').Append(stringDefaultValue).Append('"');
+            else if (defaultValue is char charDefaultValue)
+                sb.Append("'\\u").Append(((int)charDefaultValue).ToString("X")).Append("'");
             else
                 sb.Append(defaultValue);
         }
