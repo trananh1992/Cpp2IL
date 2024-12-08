@@ -5,18 +5,18 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<DebugType>embedded</DebugType>
-	</PropertyGroup>
+        <LangVersion>11</LangVersion>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <GenerateDependencyFile>false</GenerateDependencyFile>
+    </PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Cpp2IL.Core\Cpp2IL.Core.csproj">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>compile; build</IncludeAssets>
-			<ExcludedAssets>runtime</ExcludedAssets>
-		</ProjectReference>
+		<ProjectReference Include="..\Cpp2IL.Core\Cpp2IL.Core.csproj" ExcludeAssets="All" Private="false"/>
+		<ProjectReference Include="..\LibCpp2IL\LibCpp2IL.csproj" ExcludeAssets="All" Private="false"/>
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DotNetGraph" Version="3.2.0" />
+		<PackageReference Include="DotNetGraph" Version="3.2.0" IncludeAssets="All" />
 	</ItemGroup>
 
 </Project>

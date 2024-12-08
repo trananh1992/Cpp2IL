@@ -5,6 +5,24 @@ param (
 
 $ErrorActionPreference = "Stop"
 
+$NugetPackages = @(
+    "Cpp2IL.Core"
+    "LibCpp2IL"
+    "StableNameDotNet"
+    "WasmDisassembler"
+)
+
+$Plugins = @(
+    "Cpp2IL.Plugin.BuildReport"
+    "Cpp2IL.Plugin.OrbisPkg"
+    "Cpp2IL.Plugin.Pdb"
+    "Cpp2IL.Plugin.StrippedCodeRegSupport"
+)
+
+$ZippedPlugins = @(
+    "Cpp2IL.Plugin.ControlFlowGraph"
+)
+
 if ($help) {
     Write-Host "Usage: do-release.ps1 [-help] [-version <version>]"
     Write-Host "  -help: Display this help message"
@@ -25,10 +43,17 @@ $ArtifactsDir = Join-Path $ProjectRoot "artifacts"
 $BuildDir = Join-Path $MainCommandLineAppDir "bin"
 $ReleaseBuildDir = Join-Path $BuildDir "release"
 
-Write-Host "Cleaning up old build and artifacts directories"
-if(Test-Path $ReleaseBuildDir)
+Write-Host "Cleaning up old bin and artifacts directories"
+
+foreach($proj in $NugetPackages) 
 {
-    Remove-Item -Recurse -Force $ReleaseBuildDir
+    $projDir = Join-Path $ProjectRoot $proj
+    $projBuildDir = Join-Path $projDir "bin"
+    
+    if(Test-Path $projBuildDir)
+    {
+        Remove-Item -Recurse -Force $projBuildDir
+    }
 }
 
 if(Test-Path $ArtifactsDir)
@@ -36,11 +61,41 @@ if(Test-Path $ArtifactsDir)
     Remove-Item -Recurse -Force $ArtifactsDir
 }
 
+$null = New-Item -ItemType Directory -Force -Path $ArtifactsDir
+
+Write-Host "Building all Nuget packages..."
+
+foreach($proj in $NugetPackages) 
+{
+    Write-Host "    Building $proj..."
+    $projDir = Join-Path $ProjectRoot $proj
+    $projBuildDir = Join-Path $projDir "bin\Release"
+    
+    $null = dotnet build -c Release /p:VersionSuffix=$version $projDir
+    
+    # Should only be one nupkg file in the bin directory 
+    $files = Get-ChildItem $projBuildDir -Filter "*.nupkg"
+   
+    if($files.Count -ne 1)
+    {
+        Write-Host "Error: Expected 1 nupkg file in $projBuildDir, found $($files.Count)"
+        exit 1
+    }
+    
+    $nupkgFileName = $files[0].Name
+    $nupkgFile = $files[0].FullName
+    $nupkgDestFile = Join-Path $ArtifactsDir $nupkgFileName
+   
+    Write-Host "    Copying $nupkgFileName to artifacts directory..."
+    
+    Copy-Item $nupkgFile $nupkgDestFile
+}
+
 cd $MainCommandLineAppDir
 
 $baseVersion = (Select-Xml -XPath "//Project/PropertyGroup/VersionPrefix" -Path ".\Cpp2IL.csproj").Node.InnerText
 $fullVersionString = "$baseVersion-$version"
-Write-Host "Building Cpp2IL release version $fullVersionString"
+Write-Host "Building Cpp2IL command line executable, release version $fullVersionString"
 
 Write-Host "    Building Cpp2IL - Windows, Standalone .NET"
 
@@ -90,12 +145,59 @@ function ZipAndRename($rid, $platform, $releasePlatformString, $extension)
 
 Write-Host "Moving files to artifacts directory"
 
-$null = New-Item -ItemType Directory -Force -Path $ArtifactsDir
-
 CopyAndRename "net9.0" "win-x64" "Windows" ".exe"
 CopyAndRename "net9.0" "linux-x64" "Linux" ""
 CopyAndRename "net9.0" "osx-x64" "OSX" ""
 ZipAndRename "net472" "win-x64" "Windows-Netframework472" ".exe"
 
-Write-Host "Done!"
 Set-Location $ProjectRoot
+
+Write-Host "Building plugins..."
+
+foreach($plugin in $Plugins) 
+{
+    Write-Host "    Building $plugin..."
+    $pluginDir = Join-Path $ProjectRoot $plugin
+    $pluginBuildDir = Join-Path $pluginDir "bin\Release"
+    
+    if(Test-Path $pluginBuildDir)
+    {
+        Remove-Item -Recurse -Force $pluginBuildDir
+    }
+    
+    $null = dotnet build -c Release $pluginDir
+    
+    $directories = Get-ChildItem $pluginBuildDir -Directory
+    $pluginBuildDir = $directories[0].FullName
+    
+    $pluginFileName = "$plugin.dll"
+    $pluginFile = Join-Path $pluginBuildDir $pluginFileName
+    $pluginDestFile = Join-Path $ArtifactsDir $pluginFileName
+    
+    Write-Host "    Copying $pluginFileName to artifacts directory..."
+    Copy-Item $pluginFile $pluginDestFile
+}
+
+foreach($plugin in $ZippedPlugins) 
+{
+    Write-Host "    Building $plugin..."
+    $pluginDir = Join-Path $ProjectRoot $plugin
+    $pluginBuildDir = Join-Path $pluginDir "bin\Release"
+    
+    if(Test-Path $pluginBuildDir)
+    {
+        Remove-Item -Recurse -Force $pluginBuildDir
+    }
+    
+    $null = dotnet build -c Release $pluginDir
+    
+    $directories = Get-ChildItem $pluginBuildDir -Directory
+    $pluginBuildDir = $directories[0].FullName
+   
+    Write-Host "    Zipping $pluginFileName to artifacts directory..."
+    $zipFileName = "$plugin.zip"
+    $zipFile = Join-Path $ArtifactsDir $zipFileName
+    $null = Compress-Archive -Path $pluginBuildDir\* -DestinationPath $zipFile
+}
+
+Write-Host "Done!"
