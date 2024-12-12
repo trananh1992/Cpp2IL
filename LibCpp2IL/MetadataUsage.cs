@@ -25,28 +25,27 @@ public class MetadataUsage(MetadataUsageType type, ulong offset, uint value)
 
     public uint RawValue => value;
 
-    public object Value
-    {
-        get
+    public object Value =>
+        Type switch
         {
-            switch (Type)
-            {
-                case MetadataUsageType.Type:
-                case MetadataUsageType.TypeInfo:
-                    return AsType();
-                case MetadataUsageType.MethodDef:
-                    return AsMethod();
-                case MetadataUsageType.FieldInfo:
-                    return AsField();
-                case MetadataUsageType.StringLiteral:
-                    return AsLiteral();
-                case MetadataUsageType.MethodRef:
-                    return AsGenericMethodRef();
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-    }
+            MetadataUsageType.Type or MetadataUsageType.TypeInfo => AsType(),
+            MetadataUsageType.MethodDef => AsMethod(),
+            MetadataUsageType.FieldInfo => AsField(),
+            MetadataUsageType.StringLiteral => AsLiteral(),
+            MetadataUsageType.MethodRef => AsGenericMethodRef(),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
+    public bool IsValid =>
+        Type switch
+        {
+            MetadataUsageType.Type or MetadataUsageType.TypeInfo => value < LibCpp2IlMain.Binary!.NumTypes,
+            MetadataUsageType.MethodDef => value < LibCpp2IlMain.TheMetadata!.methodDefs.Length,
+            MetadataUsageType.FieldInfo => value < LibCpp2IlMain.TheMetadata!.fieldRefs.Length,
+            MetadataUsageType.StringLiteral => value < LibCpp2IlMain.TheMetadata!.stringLiterals.Length,
+            MetadataUsageType.MethodRef => value < LibCpp2IlMain.Binary!.AllGenericMethodSpecs.Length,
+            _ => false
+        };
 
     public Il2CppTypeReflectionData AsType()
     {
@@ -153,22 +152,6 @@ public class MetadataUsage(MetadataUsageType type, ulong offset, uint value)
     public override string ToString()
     {
         return $"Metadata Usage {{type={Type}, Value={Value}}}";
-    }
-
-    public bool IsValid
-    {
-        get
-        {
-            try
-            {
-                var _ = Value;
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
     }
 
 
