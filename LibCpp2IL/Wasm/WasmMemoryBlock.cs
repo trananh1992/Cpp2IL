@@ -7,6 +7,8 @@ public class WasmMemoryBlock : ClassReadingBinaryReader
 {
     internal byte[] Bytes;
 
+    public override float MetadataVersion { get; }
+
     private static MemoryStream BuildStream(WasmFile file)
     {
         //Find the maximum byte in the data section that has a value
@@ -32,6 +34,7 @@ public class WasmMemoryBlock : ClassReadingBinaryReader
 
     public WasmMemoryBlock(WasmFile file) : base(BuildStream(file))
     {
+        MetadataVersion = file.MetadataVersion;
         is32Bit = true;
         Bytes = ((MemoryStream)BaseStream).ToArray();
     }

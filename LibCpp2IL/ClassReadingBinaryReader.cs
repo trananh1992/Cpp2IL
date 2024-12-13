@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace LibCpp2IL;
 
-public class ClassReadingBinaryReader : EndianAwareBinaryReader
+public abstract class ClassReadingBinaryReader : EndianAwareBinaryReader
 {
     /// <summary>
     /// Set this to true to enable storing of amount of bytes read of each readable structure.
@@ -26,6 +26,8 @@ public class ClassReadingBinaryReader : EndianAwareBinaryReader
     protected bool _hasFinishedInitialRead;
     private bool _inReadableRead;
     public ConcurrentDictionary<Type, int> BytesReadPerClass = new();
+    
+    public abstract float MetadataVersion { get; }
 
 
     public ClassReadingBinaryReader(MemoryStream input) : base(input)
@@ -173,7 +175,7 @@ public class ClassReadingBinaryReader : EndianAwareBinaryReader
 
     private T InternalReadReadableClass<T>() where T : ReadableClass, new()
     {
-        var t = new T();
+        var t = new T { MetadataVersion = MetadataVersion };
 
         if (!_inReadableRead)
         {

@@ -6,6 +6,7 @@ using Cpp2IL.Core.Api;
 using Cpp2IL.Core.Exceptions;
 using Cpp2IL.Core.Il2CppApiFunctions;
 using Cpp2IL.Core.Logging;
+using Cpp2IL.Core.Utils;
 using LibCpp2IL;
 using LibCpp2IL.Metadata;
 
@@ -101,6 +102,8 @@ public class ApplicationAnalysisContext : ContextWithDataStorage
         }
 
         SystemTypes = new(this);
+        
+        MiscUtils.InitFunctionStarts(this);
 
         PopulateMethodsByAddressTable();
 

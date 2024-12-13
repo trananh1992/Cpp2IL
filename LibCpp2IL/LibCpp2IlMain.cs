@@ -29,7 +29,7 @@ public static class LibCpp2IlMain
     public static readonly LibCpp2IlSettings Settings = new();
 
     public static bool Il2CppTypeHasNumMods5Bits;
-    public static float MetadataVersion => TheMetadata?.MetadataVersion ?? 0;
+    public static float MetadataVersion => TheMetadata!.MetadataVersion;
     
     public static Il2CppBinary? Binary;
     public static Il2CppMetadata? TheMetadata;

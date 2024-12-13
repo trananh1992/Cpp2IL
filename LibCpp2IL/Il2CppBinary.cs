@@ -60,10 +60,15 @@ public abstract class Il2CppBinary(MemoryStream input) : ClassReadingBinaryReade
     /// </summary>
     public virtual ClassReadingBinaryReader Reader => this;
 
+    private float _metadataVersion;
+    public sealed override float MetadataVersion => _metadataVersion; 
+
     public int InBinaryMetadataSize { get; private set; }
 
     public void Init(ulong pCodeRegistration, ulong pMetadataRegistration, Il2CppMetadata metadata)
     {
+        _metadataVersion = metadata.MetadataVersion;
+        
         var cr = pCodeRegistration > 0 ? ReadReadableAtVirtualAddress<Il2CppCodeRegistration>(pCodeRegistration) : null;
         var mr = pMetadataRegistration > 0 ? ReadReadableAtVirtualAddress<Il2CppMetadataRegistration>(pMetadataRegistration) : null;
 

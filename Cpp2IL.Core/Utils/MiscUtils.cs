@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Cpp2IL.Core.Model.Contexts;
 using LibCpp2IL;
 
 namespace Cpp2IL.Core.Utils;
@@ -168,21 +169,23 @@ public static class MiscUtils
             _ => throw new($"ReinterpretBytes: Cannot get byte array from {original} (type {original.GetType()}")
         };
 
-    private static void InitFunctionStarts()
+    //TODO: Refactor this out to a property of ApplicationAnalysisContext
+    internal static void InitFunctionStarts(ApplicationAnalysisContext appContext)
     {
-        _allKnownFunctionStarts = Cpp2IlApi.CurrentAppContext!.Metadata.methodDefs.Select(m => m.MethodPointer)
-            .Concat(Cpp2IlApi.CurrentAppContext.Binary.ConcreteGenericImplementationsByAddress.Keys)
+        _allKnownFunctionStarts = appContext.Metadata.methodDefs.Select(m => m.MethodPointer)
+            .Concat(appContext.Binary.ConcreteGenericImplementationsByAddress.Keys)
             .Concat(SharedState.AttributeGeneratorStarts)
             .ToList();
 
         //Sort in ascending order
         _allKnownFunctionStarts.Sort();
     }
+    //TODO: End
 
     public static ulong GetAddressOfNextFunctionStart(ulong current)
     {
         if (_allKnownFunctionStarts == null)
-            InitFunctionStarts();
+            throw new("Function starts not initialized!");
 
         //Binary-search-like approach
         var lower = 0;
