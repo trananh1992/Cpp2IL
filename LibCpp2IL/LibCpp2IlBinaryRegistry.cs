@@ -65,13 +65,13 @@ public static class LibCpp2IlBinaryRegistry
 
         LibCpp2IlMain.Binary = binary;
 
-        var (codereg, metareg) = binary.FindCodeAndMetadataReg(metadata.methodDefs.Count(x => x.methodIndex >= 0), metadata.typeDefs.Length);
+        var (codereg, metareg) = binary.FindCodeAndMetadataReg(metadata);
 
         LibLogger.InfoNewline($"Got Binary codereg: 0x{codereg:X}, metareg: 0x{metareg:X} in {(DateTime.Now - start).TotalMilliseconds:F0}ms.");
         LibLogger.InfoNewline("Initializing Binary...");
         start = DateTime.Now;
 
-        binary.Init(codereg, metareg);
+        binary.Init(codereg, metareg, metadata);
 
         LibLogger.InfoNewline($"Initialized Binary in {(DateTime.Now - start).TotalMilliseconds:F0}ms");
 

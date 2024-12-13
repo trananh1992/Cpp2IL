@@ -112,7 +112,7 @@ public static class AsmResolverUtils
 
                 //Get base type
                 TypeDefsByIndex.TryGetValue(genericClass.TypeDefinitionIndex, out var typeDefinition);
-                if (LibCpp2IlMain.MetadataVersion >= 27f)
+                if (Cpp2IlApi.CurrentAppContext!.MetadataVersion >= 27f) //TODO: we should pass in the app context to this method
                 {
                     //V27 - type indexes are pointers now.
                     var type = LibCpp2IlMain.Binary!.ReadReadableAtVirtualAddress<Il2CppType>((ulong)genericClass.TypeDefinitionIndex);
@@ -120,15 +120,6 @@ public static class AsmResolverUtils
                 }
 
                 var genericInstanceType = new GenericInstanceTypeSignature(typeDefinition!, typeDefinition!.IsValueType);
-
-                //If the generic type is declared in a type with generic params, we have to fill all its parent's params with dummy values.
-                // if (typeDefinition.DeclaringType?.GenericParameters?.Count is {} declTypeGpCount)
-                // {
-                //     for (var i = 0; i < declTypeGpCount; i++)
-                //     {
-                //         genericInstanceType.TypeArguments.Add(TypeDefinitionsAsmResolver.Object.ToTypeSignature());
-                //     }
-                // }
 
                 //Get generic arguments
                 var genericArgumentTypes = genericClass.Context.ClassInst.Types;

@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using LibCpp2IL.BinaryStructures;
 using LibCpp2IL.Logging;
+using LibCpp2IL.Metadata;
 using LibCpp2IL.NintendoSwitch;
 using LibCpp2IL.Wasm;
 
@@ -124,7 +125,7 @@ public class BinarySearcher(Il2CppBinary binary, int methodCount, int typeDefini
     }
 
     [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
-    internal ulong FindCodeRegistrationPost2019()
+    internal ulong FindCodeRegistrationPost2019(Il2CppMetadata metadata)
     {
         //Works only on >=24.2
         var mscorlibs = FindAllStrings("mscorlib.dll\0").Select(idx => binary.MapRawAddressToVirtual(idx)).ToList();
@@ -148,7 +149,7 @@ public class BinarySearcher(Il2CppBinary binary, int methodCount, int typeDefini
         var ptrSize = (binary.is32Bit ? 4u : 8u);
 
         List<ulong>? pCodegenModules = null;
-        if (LibCpp2IlMain.MetadataVersion < 27f)
+        if (metadata.MetadataVersion < 27f)
         {
             //Pre-v27, mscorlib is the first codegen module, so *MscorlibCodegenEntryInCodegenModulesList == g_CodegenModules, so we can just find a pointer to this.
             if (pMscorlibCodegenEntryInCodegenModulesList.Count == 1)
@@ -209,7 +210,7 @@ public class BinarySearcher(Il2CppBinary binary, int methodCount, int typeDefini
 
         //We have pCodegenModules which *should* be x-reffed in the last pointer of Il2CppCodeRegistration.
         //So, subtract the size of one pointer from that...
-        var bytesToGoBack = (ulong)Il2CppCodeRegistration.GetStructSize(binary.is32Bit, LibCpp2IlMain.MetadataVersion) - ptrSize;
+        var bytesToGoBack = (ulong)Il2CppCodeRegistration.GetStructSize(binary.is32Bit, metadata.MetadataVersion) - ptrSize;
 
         LibLogger.VerboseNewline($"\t\t\tpCodegenModules is the second-to-last field of the codereg struct. Therefore on this version and architecture, we need to subtract {bytesToGoBack} bytes from its address to get pCodeReg");
 
@@ -308,7 +309,7 @@ public class BinarySearcher(Il2CppBinary binary, int methodCount, int typeDefini
         return 0;
     }
 
-    public ulong FindMetadataRegistrationPost24_5()
+    public ulong FindMetadataRegistrationPost24_5(Il2CppMetadata metadata)
     {
         var ptrSize = binary.is32Bit ? 4ul : 8ul;
         var sizeOfMr = (uint)Il2CppMetadataRegistration.GetStructSize(binary.is32Bit);
@@ -364,29 +365,29 @@ public class BinarySearcher(Il2CppBinary binary, int methodCount, int typeDefini
                 if (ok)
                 {
                     var metaReg = binary.ReadReadableAtVirtualAddress<Il2CppMetadataRegistration>(va);
-                    if (LibCpp2IlMain.MetadataVersion >= 27f && (metaReg.metadataUsagesCount != 0 || metaReg.metadataUsages != 0))
+                    if (metadata.MetadataVersion >= 27f && (metaReg.metadataUsagesCount != 0 || metaReg.metadataUsages != 0))
                     {
                         //Too many metadata usages - should be 0 on v27
                         LibLogger.VerboseNewline($"\t\t\tWarning: metadata registration 0x{va:X} has {metaReg.metadataUsagesCount} metadata usages at a pointer of 0x{metaReg.metadataUsages:X}. We're on v27, these should be 0.");
                         // continue;
                     }
 
-                    if (metaReg.typeDefinitionsSizesCount != LibCpp2IlMain.TheMetadata!.typeDefs.Length)
+                    if (metaReg.typeDefinitionsSizesCount != metadata.typeDefs.Length)
                     {
-                        LibLogger.VerboseNewline($"\t\t\tRejecting metadata registration 0x{va:X} because it has {metaReg.typeDefinitionsSizesCount} type def sizes, while metadata file defines {LibCpp2IlMain.TheMetadata!.typeDefs.Length} type defs");
+                        LibLogger.VerboseNewline($"\t\t\tRejecting metadata registration 0x{va:X} because it has {metaReg.typeDefinitionsSizesCount} type def sizes, while metadata file defines {metadata.typeDefs.Length} type defs");
                         continue;
                     }
 
-                    if (metaReg.numTypes < LibCpp2IlMain.TheMetadata!.typeDefs.Length)
+                    if (metaReg.numTypes < metadata.typeDefs.Length)
                     {
-                        LibLogger.VerboseNewline($"\t\t\tRejecting metadata registration 0x{va:X} because it has {metaReg.numTypes} types, which is less than metadata-file-defined type def count of {LibCpp2IlMain.TheMetadata!.typeDefs.Length}");
+                        LibLogger.VerboseNewline($"\t\t\tRejecting metadata registration 0x{va:X} because it has {metaReg.numTypes} types, which is less than metadata-file-defined type def count of {metadata.typeDefs.Length}");
                         continue;
                     }
 
-                    if (metaReg.fieldOffsetsCount != LibCpp2IlMain.TheMetadata!.typeDefs.Length)
+                    if (metaReg.fieldOffsetsCount != metadata.typeDefs.Length)
                     {
                         //If we see any cases of failing to find meta reg and this line is in verbose log, maybe the assumption (num field offsets == num type defs) is wrong.
-                        LibLogger.VerboseNewline($"\t\t\tRejecting metadata registration 0x{va:X} because it has {metaReg.fieldOffsetsCount} field offsets, while metadata file defines {LibCpp2IlMain.TheMetadata!.typeDefs.Length} type defs");
+                        LibLogger.VerboseNewline($"\t\t\tRejecting metadata registration 0x{va:X} because it has {metaReg.fieldOffsetsCount} field offsets, while metadata file defines {metadata.typeDefs.Length} type defs");
                         continue;
                     }
 

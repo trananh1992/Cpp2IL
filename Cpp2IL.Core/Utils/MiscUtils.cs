@@ -170,8 +170,8 @@ public static class MiscUtils
 
     private static void InitFunctionStarts()
     {
-        _allKnownFunctionStarts = LibCpp2IlMain.TheMetadata!.methodDefs.Select(m => m.MethodPointer)
-            .Concat(LibCpp2IlMain.Binary!.ConcreteGenericImplementationsByAddress.Keys)
+        _allKnownFunctionStarts = Cpp2IlApi.CurrentAppContext!.Metadata.methodDefs.Select(m => m.MethodPointer)
+            .Concat(Cpp2IlApi.CurrentAppContext.Binary.ConcreteGenericImplementationsByAddress.Keys)
             .Concat(SharedState.AttributeGeneratorStarts)
             .ToList();
 
@@ -264,10 +264,10 @@ public static class MiscUtils
     {
         // var pointers = new ulong[] {0x52e6ba0, 0x52ad3a0, 0x11b09714, 0x40a990c, 0xd172c68, 0xa2c0514, 0x35ea45c, 0x1fc43208};
 
-        var methodsSortedByPointer = LibCpp2IlMain.TheMetadata!.methodDefs.ToList();
+        var methodsSortedByPointer = Cpp2IlApi.CurrentAppContext!.Metadata.methodDefs.ToList();
         methodsSortedByPointer.SortByExtractedKey(m => m.MethodPointer);
 
-        var genericMethodsSortedByPointer = LibCpp2IlMain.Binary!.ConcreteGenericImplementationsByAddress.ToList();
+        var genericMethodsSortedByPointer = Cpp2IlApi.CurrentAppContext.Binary.ConcreteGenericImplementationsByAddress.ToList();
         genericMethodsSortedByPointer.SortByExtractedKey(m => m.Key);
 
         var stack = pointers.Select(p =>

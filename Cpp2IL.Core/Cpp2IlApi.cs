@@ -107,7 +107,7 @@ public static class Cpp2IlApi
 
         var start = DateTime.Now;
         Logger.InfoNewline("Creating application model...");
-        CurrentAppContext = new(LibCpp2IlMain.Binary, LibCpp2IlMain.TheMetadata!, LibCpp2IlMain.MetadataVersion);
+        CurrentAppContext = new(LibCpp2IlMain.Binary, LibCpp2IlMain.TheMetadata!);
         Logger.InfoNewline($"Application model created in {(DateTime.Now - start).TotalMilliseconds}ms");
     }
 

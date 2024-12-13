@@ -28,7 +28,7 @@ public class ApplicationAnalysisContext : ContextWithDataStorage
     /// <summary>
     /// The version of the IL2CPP metadata file this application was loaded from.
     /// </summary>
-    public readonly float MetadataVersion;
+    public float MetadataVersion => Metadata.MetadataVersion;
 
     /// <summary>
     /// The instruction set helper class associated with the instruction set that this application was compiled with.
@@ -70,11 +70,10 @@ public class ApplicationAnalysisContext : ContextWithDataStorage
     /// </summary>
     public bool HasFinishedInitializing { get; private set; }
 
-    public ApplicationAnalysisContext(Il2CppBinary binary, Il2CppMetadata metadata, float metadataVersion)
+    public ApplicationAnalysisContext(Il2CppBinary binary, Il2CppMetadata metadata)
     {
         Binary = binary;
         Metadata = metadata;
-        MetadataVersion = metadataVersion;
 
         try
         {

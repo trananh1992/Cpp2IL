@@ -62,7 +62,7 @@ public abstract class Il2CppBinary(MemoryStream input) : ClassReadingBinaryReade
 
     public int InBinaryMetadataSize { get; private set; }
 
-    public void Init(ulong pCodeRegistration, ulong pMetadataRegistration)
+    public void Init(ulong pCodeRegistration, ulong pMetadataRegistration, Il2CppMetadata metadata)
     {
         var cr = pCodeRegistration > 0 ? ReadReadableAtVirtualAddress<Il2CppCodeRegistration>(pCodeRegistration) : null;
         var mr = pMetadataRegistration > 0 ? ReadReadableAtVirtualAddress<Il2CppMetadataRegistration>(pMetadataRegistration) : null;
@@ -112,7 +112,7 @@ public abstract class Il2CppBinary(MemoryStream input) : ClassReadingBinaryReade
 
         InBinaryMetadataSize += GetNumBytesReadSinceLastCallAndClear();
 
-        if (LibCpp2IlMain.MetadataVersion < 27)
+        if (metadata.MetadataVersion < 27)
         {
             LibLogger.Verbose("\tReading custom attribute generators...");
             start = DateTime.Now;
@@ -161,7 +161,7 @@ public abstract class Il2CppBinary(MemoryStream input) : ClassReadingBinaryReade
 
         InBinaryMetadataSize += GetNumBytesReadSinceLastCallAndClear();
 
-        if (LibCpp2IlMain.MetadataVersion >= 24.2f)
+        if (metadata.MetadataVersion >= 24.2f)
         {
             LibLogger.VerboseNewline("\tReading code gen modules...");
             start = DateTime.Now;
@@ -472,25 +472,28 @@ public abstract class Il2CppBinary(MemoryStream input) : ClassReadingBinaryReade
 
     public abstract ulong GetVirtualAddressOfPrimaryExecutableSection();
 
-    public virtual (ulong pCodeRegistration, ulong pMetadataRegistration) FindCodeAndMetadataReg(int methodCount, int typeDefinitionsCount)
+    public virtual (ulong pCodeRegistration, ulong pMetadataRegistration) FindCodeAndMetadataReg(Il2CppMetadata metadata)
     {
         LibLogger.VerboseNewline("\tAttempting to locate code and metadata registration functions...");
+
+        var methodCount = metadata.methodDefs.Count(x => x.methodIndex >= 0);
+        var typeDefinitionsCount = metadata.typeDefs.Length;
 
         var plusSearch = new BinarySearcher(this, methodCount, typeDefinitionsCount);
 
         LibLogger.VerboseNewline("\t\t-Searching for MetadataReg...");
 
-        var pMetadataRegistration = LibCpp2IlMain.MetadataVersion < 24.5f
+        var pMetadataRegistration = metadata.MetadataVersion < 24.5f
             ? plusSearch.FindMetadataRegistrationPre24_5()
-            : plusSearch.FindMetadataRegistrationPost24_5();
+            : plusSearch.FindMetadataRegistrationPost24_5(metadata);
 
         LibLogger.VerboseNewline("\t\t-Searching for CodeReg...");
 
         ulong pCodeRegistration;
-        if (LibCpp2IlMain.MetadataVersion >= 24.2f)
+        if (metadata.MetadataVersion >= 24.2f)
         {
             LibLogger.VerboseNewline("\t\t\tUsing mscorlib full-disassembly approach to get codereg, this may take a while...");
-            pCodeRegistration = plusSearch.FindCodeRegistrationPost2019();
+            pCodeRegistration = plusSearch.FindCodeRegistrationPost2019(metadata);
         }
         else
             pCodeRegistration = plusSearch.FindCodeRegistrationPre2019();

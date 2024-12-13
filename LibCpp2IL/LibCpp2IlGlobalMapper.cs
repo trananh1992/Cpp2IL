@@ -30,7 +30,7 @@ public static class LibCpp2IlGlobalMapper
 
     internal static void MapGlobalIdentifiers(Il2CppMetadata metadata, Il2CppBinary cppAssembly)
     {
-        if (LibCpp2IlMain.MetadataVersion < 27f)
+        if (metadata.MetadataVersion < 27f)
             MapGlobalIdentifiersPre27(metadata, cppAssembly);
         else
             MapGlobalIdentifiersPost27(metadata, cppAssembly);

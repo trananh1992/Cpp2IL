@@ -30,7 +30,7 @@ public class StrippedCodeRegSupportPlugin : Cpp2IlPlugin
         //We don't have a CodeRegistration, so we need to try and find one.
         Logger.InfoNewline("Received read failure for CodeRegistration, implying it may have been stripped. Attempting to work around...");
 
-        if (LibCpp2IlMain.MetadataVersion < MinSupportedMetadataVersion)
+        if (metadata.MetadataVersion < MinSupportedMetadataVersion)
         {
             Logger.ErrorNewline($"This game's metadata version is too old to support this plugin (it needs to be at least Metadata {MinSupportedMetadataVersion:F1}, i.e. Unity 2020.2 or newer).");
             return;

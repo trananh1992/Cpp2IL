@@ -13,8 +13,10 @@ namespace LibCpp2IL.Metadata;
 
 public class Il2CppMetadata : ClassReadingBinaryReader
 {
+    public const uint MetadataMagic = 0xFAB11BAF;
+    public float MetadataVersion { get; }
+    
     //Disable null check as this stuff is reflected.
-#pragma warning disable 8618
     public Il2CppGlobalMetadataHeader metadataHeader;
     public Il2CppAssemblyDefinition[] AssemblyDefinitions;
     public Il2CppImageDefinition[] imageDefinitions;
@@ -27,18 +29,16 @@ public class Il2CppMetadata : ClassReadingBinaryReader
     private Il2CppFieldDefaultValue[] fieldDefaultValues;
     private Il2CppParameterDefaultValue[] parameterDefaultValues;
     public Il2CppPropertyDefinition[] propertyDefs;
-    public List<Il2CppCustomAttributeTypeRange> attributeTypeRanges;
+    public List<Il2CppCustomAttributeTypeRange>? attributeTypeRanges; //Removed in v29
     public Il2CppStringLiteral[] stringLiterals;
-    public Il2CppMetadataUsageList[] metadataUsageLists;
-    private Il2CppMetadataUsagePair[] metadataUsagePairs;
-    public Il2CppRGCTXDefinition[] RgctxDefinitions; //Moved to binary in v24.2
-
-    //Pre-29
-    public int[] attributeTypes;
+    public Il2CppMetadataUsageList[]? metadataUsageLists; //Removed in v27
+    private Il2CppMetadataUsagePair[]? metadataUsagePairs; //Removed in v27
+    public Il2CppRGCTXDefinition[]? RgctxDefinitions; //Moved to binary in v24.2
+    
+    public int[]? attributeTypes; //Removed in v29
+    public List<Il2CppCustomAttributeDataRange>? AttributeDataRanges; //Added in v29
+    
     public int[] interfaceIndices;
-
-    //Post-29
-    public List<Il2CppCustomAttributeDataRange> AttributeDataRanges;
 
     //Moved to binary in v27.
     public Dictionary<uint, SortedDictionary<uint, uint>>? metadataUsageDic;
@@ -57,7 +57,7 @@ public class Il2CppMetadata : ClassReadingBinaryReader
 
     public static bool HasMetadataHeader(byte[] bytes) => bytes.Length >= 4 && BitConverter.ToUInt32(bytes, 0) == 0xFAB11BAF;
 
-    public static Il2CppMetadata? ReadFrom(byte[] bytes, UnityVersion unityVersion)
+    public static Il2CppMetadata ReadFrom(byte[] bytes, UnityVersion unityVersion)
     {
         if (!HasMetadataHeader(bytes))
         {
@@ -121,18 +121,16 @@ public class Il2CppMetadata : ClassReadingBinaryReader
 
         LibLogger.InfoNewline($"\tUsing actual IL2CPP Metadata version {actualVersion}");
 
-        LibCpp2IlMain.MetadataVersion = actualVersion;
-
-        return new Il2CppMetadata(new MemoryStream(bytes));
+        return new Il2CppMetadata(new MemoryStream(bytes), actualVersion);
     }
 
-    private Il2CppMetadata(MemoryStream stream) : base(stream)
+    private Il2CppMetadata(MemoryStream stream, float metadataVersion) : base(stream)
     {
+        MetadataVersion = metadataVersion;
         metadataHeader = ReadReadable<Il2CppGlobalMetadataHeader>();
-        if (metadataHeader.magicNumber != 0xFAB11BAF)
-        {
-            throw new Exception("ERROR: Magic number mismatch. Expecting " + 0xFAB11BAF + " but got " + metadataHeader.magicNumber);
-        }
+        
+        if (metadataHeader.magicNumber != MetadataMagic)
+            throw new Exception($"ERROR: Magic number mismatch. Expecting 0x{MetadataMagic:X8} but got 0x{metadataHeader.magicNumber:X8}");
 
         LibLogger.Verbose("\tReading image definitions...");
         var start = DateTime.Now;
@@ -230,7 +228,7 @@ public class Il2CppMetadata : ClassReadingBinaryReader
         stringLiterals = ReadMetadataClassArray<Il2CppStringLiteral>(metadataHeader.stringLiteralOffset, metadataHeader.stringLiteralCount);
         LibLogger.VerboseNewline($"OK ({(DateTime.Now - start).TotalMilliseconds} ms)");
 
-        if (LibCpp2IlMain.MetadataVersion < 24.2f)
+        if (MetadataVersion < 24.2f)
         {
             LibLogger.Verbose("\tReading RGCTX data...");
             start = DateTime.Now;
@@ -241,7 +239,7 @@ public class Il2CppMetadata : ClassReadingBinaryReader
         }
 
         //Removed in v27 (2020.2) and also 24.5 (2019.4.21)
-        if (LibCpp2IlMain.MetadataVersion < 27f)
+        if (MetadataVersion < 27f)
         {
             LibLogger.Verbose("\tReading usage data...");
             start = DateTime.Now;
@@ -259,7 +257,7 @@ public class Il2CppMetadata : ClassReadingBinaryReader
 
         //v21+ fields
 
-        if (LibCpp2IlMain.MetadataVersion < 29)
+        if (MetadataVersion < 29)
         {
             //Removed in v29
             LibLogger.Verbose("\tReading attribute types...");
@@ -335,6 +333,9 @@ public class Il2CppMetadata : ClassReadingBinaryReader
 
     private void DecipherMetadataUsage()
     {
+        if(metadataUsageLists == null || metadataUsagePairs == null)
+            throw new InvalidOperationException("Called DecipherMetadataUsage on v27 or newer metadata");
+        
         metadataUsageDic = new();
         for (var i = 1u; i <= 6u; i++)
         {
@@ -447,19 +448,22 @@ public class Il2CppMetadata : ClassReadingBinaryReader
 
     public Il2CppCustomAttributeTypeRange? GetCustomAttributeData(Il2CppImageDefinition imageDef, int customAttributeIndex, uint token, out int idx)
     {
+        if(MetadataVersion >= 29f)
+            throw new("This method is not valid for metadata versions 29 and above");
+        
         idx = -1;
 
-        if (LibCpp2IlMain.MetadataVersion <= 24f)
+        if (MetadataVersion <= 24f)
         {
             idx = customAttributeIndex;
-            return attributeTypeRanges[customAttributeIndex];
+            return attributeTypeRanges![customAttributeIndex]; //Not-null assertion because we've checked version
         }
 
         var target = new Il2CppCustomAttributeTypeRange { token = token };
 
         if (imageDef.customAttributeStart < 0)
             throw new("Image has customAttributeStart < 0");
-        if (imageDef.customAttributeStart + imageDef.customAttributeCount > attributeTypeRanges.Count)
+        if (imageDef.customAttributeStart + imageDef.customAttributeCount > attributeTypeRanges!.Count) //Not-null assertion because we've checked version is < 29
             throw new($"Image has customAttributeStart + customAttributeCount > attributeTypeRanges.Count ({imageDef.customAttributeStart + imageDef.customAttributeCount} > {attributeTypeRanges.Count})");
 
         idx = attributeTypeRanges.BinarySearch(imageDef.customAttributeStart, (int)imageDef.customAttributeCount, target, new TokenComparer());

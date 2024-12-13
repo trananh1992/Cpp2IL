@@ -133,7 +133,7 @@ public class AttributeInjectorProcessingLayer : Cpp2IlProcessingLayer
 
     private static void InjectAttributeAttribute(ApplicationAnalysisContext appContext)
     {
-        if (LibCpp2IlMain.MetadataVersion >= 29f)
+        if (appContext.MetadataVersion >= 29f)
         {
             //All attributes should be fully serializable anyway, as they're stored in metadata
             //However, we still need to read them all

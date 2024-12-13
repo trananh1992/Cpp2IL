@@ -29,7 +29,8 @@ public static class LibCpp2IlMain
     public static readonly LibCpp2IlSettings Settings = new();
 
     public static bool Il2CppTypeHasNumMods5Bits;
-    public static float MetadataVersion = 24f;
+    public static float MetadataVersion => TheMetadata?.MetadataVersion ?? 0;
+    
     public static Il2CppBinary? Binary;
     public static Il2CppMetadata? TheMetadata;
 
@@ -152,22 +153,19 @@ public static class LibCpp2IlMain
 
         LibLogger.InfoNewline("Initializing Metadata...");
 
-        TheMetadata = Il2CppMetadata.ReadFrom(metadataBytes, unityVersion);
+        var meta = TheMetadata = Il2CppMetadata.ReadFrom(metadataBytes, unityVersion);
 
-        Il2CppTypeHasNumMods5Bits = MetadataVersion >= 27.2f;
-
-        if (TheMetadata == null)
-            return false;
+        Il2CppTypeHasNumMods5Bits = meta.MetadataVersion >= 27.2f;
 
         LibLogger.InfoNewline($"Initialized Metadata in {(DateTime.Now - start).TotalMilliseconds:F0}ms");
 
-        Binary = LibCpp2IlBinaryRegistry.CreateAndInit(binaryBytes, TheMetadata);
+        var bin = Binary = LibCpp2IlBinaryRegistry.CreateAndInit(binaryBytes, meta);
 
         if (!Settings.DisableGlobalResolving && MetadataVersion < 27)
         {
             start = DateTime.Now;
             LibLogger.Info("Mapping Globals...");
-            LibCpp2IlGlobalMapper.MapGlobalIdentifiers(TheMetadata, Binary);
+            LibCpp2IlGlobalMapper.MapGlobalIdentifiers(meta, bin);
             LibLogger.InfoNewline($"OK ({(DateTime.Now - start).TotalMilliseconds:F0}ms)");
         }
 
@@ -176,7 +174,7 @@ public static class LibCpp2IlMain
             start = DateTime.Now;
             LibLogger.Info("Mapping pointers to Il2CppMethodDefinitions...");
             var i = 0;
-            foreach (var (method, ptr) in TheMetadata.methodDefs.Select(method => (method, ptr: method.MethodPointer)))
+            foreach (var (method, ptr) in meta.methodDefs.Select(method => (method, ptr: method.MethodPointer)))
             {
                 if (!MethodsByPtr.ContainsKey(ptr))
                     MethodsByPtr[ptr] = [];

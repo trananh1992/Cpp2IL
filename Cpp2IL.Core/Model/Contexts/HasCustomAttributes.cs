@@ -98,8 +98,8 @@ public abstract class HasCustomAttributes(uint token, ApplicationAnalysisContext
         }
 
         AttributeTypes = Enumerable.Range(AttributeTypeRange.start, AttributeTypeRange.count)
-            .Select(attrIdx => LibCpp2IlMain.TheMetadata!.attributeTypes[attrIdx])
-            .Select(typeIdx => LibCpp2IlMain.Binary!.GetType(typeIdx))
+            .Select(attrIdx => AppContext.Metadata!.attributeTypes![attrIdx]) //Not null because we've checked we're not on v29
+            .Select(typeIdx => AppContext.Binary!.GetType(typeIdx))
             .ToList();
 
         ulong generatorPtr;
