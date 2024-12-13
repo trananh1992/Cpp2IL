@@ -64,6 +64,11 @@ public abstract class HasCustomAttributes(uint token, ApplicationAnalysisContext
 
     public abstract string CustomAttributeOwnerName { get; }
 
+    /// <summary>
+    /// Pre-v29, stores the index of the custom attribute range for this member. Post-v29, always 0.
+    /// </summary>
+    private int Pre29RangeIndex;
+
     public bool IsCompilerGeneratedBasedOnCustomAttributes =>
         CustomAttributes?.Any(a => a.Constructor.DeclaringType!.FullName.Contains("CompilerGeneratedAttribute"))
         ?? AttributeTypes?.Any(t => t.Type == Il2CppTypeEnum.IL2CPP_TYPE_CLASS && t.AsClass().FullName!.Contains("CompilerGeneratedAttribute"))
@@ -88,7 +93,7 @@ public abstract class HasCustomAttributes(uint token, ApplicationAnalysisContext
             return;
         }
 
-        AttributeTypeRange = AppContext.Metadata.GetCustomAttributeData(CustomAttributeAssembly.Definition.Image, CustomAttributeIndex, Token, out var rangeIndex);
+        AttributeTypeRange = AppContext.Metadata.GetCustomAttributeData(CustomAttributeAssembly.Definition.Image, CustomAttributeIndex, Token, out Pre29RangeIndex);
 
         if (AttributeTypeRange == null || AttributeTypeRange.count == 0)
         {
@@ -101,36 +106,6 @@ public abstract class HasCustomAttributes(uint token, ApplicationAnalysisContext
             .Select(attrIdx => AppContext.Metadata!.attributeTypes![attrIdx]) //Not null because we've checked we're not on v29
             .Select(typeIdx => AppContext.Binary!.GetType(typeIdx))
             .ToList();
-
-        ulong generatorPtr;
-        if (AppContext.MetadataVersion < 27)
-            try
-            {
-                generatorPtr = AppContext.Binary.GetCustomAttributeGenerator(rangeIndex);
-            }
-            catch (IndexOutOfRangeException)
-            {
-                Logger.WarnNewline("Custom attribute generator out of range for " + this, "CA Restore");
-                RawIl2CppCustomAttributeData = Array.Empty<byte>();
-                return; //Bail out
-            }
-        else
-        {
-            var baseAddress = CustomAttributeAssembly.CodeGenModule!.customAttributeCacheGenerator;
-            var relativeIndex = rangeIndex - CustomAttributeAssembly.Definition.Image.customAttributeStart;
-            var ptrToAddress = baseAddress + (ulong)relativeIndex * AppContext.Binary.PointerSize;
-            generatorPtr = AppContext.Binary.ReadPointerAtVirtualAddress(ptrToAddress);
-        }
-
-        if (generatorPtr == 0 || !AppContext.Binary.TryMapVirtualAddressToRaw(generatorPtr, out _))
-        {
-            Logger.WarnNewline($"Supposedly had custom attributes ({string.Join(", ", AttributeTypes)}), but generator was null for " + this, "CA Restore");
-            RawIl2CppCustomAttributeData = Memory<byte>.Empty;
-            return; //Possibly no attributes with params?
-        }
-
-        CaCacheGeneratorAnalysis = new(generatorPtr, AppContext, this);
-        RawIl2CppCustomAttributeData = CaCacheGeneratorAnalysis.RawBytes;
     }
 
     private (long blobStart, long blobEnd)? GetV29BlobOffsets()
@@ -158,6 +133,39 @@ public abstract class HasCustomAttributes(uint token, ApplicationAnalysisContext
         return (blobStart, blobEnd);
     }
 
+    private void InitPre29AttributeGeneratorAnalysis(int rangeIndex)
+    {
+        ulong generatorPtr;
+        if (AppContext.MetadataVersion < 27)
+            try
+            {
+                generatorPtr = AppContext.Binary.GetCustomAttributeGenerator(rangeIndex);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                Logger.WarnNewline("Custom attribute generator out of range for " + this, "CA Restore");
+                RawIl2CppCustomAttributeData = Array.Empty<byte>();
+                return;
+            }
+        else
+        {
+            var baseAddress = CustomAttributeAssembly.CodeGenModule!.customAttributeCacheGenerator;
+            var relativeIndex = rangeIndex - CustomAttributeAssembly.Definition.Image.customAttributeStart;
+            var ptrToAddress = baseAddress + (ulong)relativeIndex * AppContext.Binary.PointerSize;
+            generatorPtr = AppContext.Binary.ReadPointerAtVirtualAddress(ptrToAddress);
+        }
+
+        if (generatorPtr == 0 || !AppContext.Binary.TryMapVirtualAddressToRaw(generatorPtr, out _))
+        {
+            Logger.WarnNewline($"Supposedly had custom attributes ({string.Join(", ", AttributeTypes)}), but generator was null for " + this, "CA Restore");
+            RawIl2CppCustomAttributeData = Memory<byte>.Empty;
+            return;
+        }
+
+        CaCacheGeneratorAnalysis = new(generatorPtr, AppContext, this);
+        RawIl2CppCustomAttributeData = CaCacheGeneratorAnalysis.RawBytes;
+    }
+
     /// <summary>
     /// Attempt to parse the Il2CppCustomAttributeData blob into custom attributes.
     /// </summary>
@@ -175,6 +183,8 @@ public abstract class HasCustomAttributes(uint token, ApplicationAnalysisContext
             AnalyzeCustomAttributeDataV29();
             return;
         }
+        
+        InitPre29AttributeGeneratorAnalysis(Pre29RangeIndex);
 
         if (RawIl2CppCustomAttributeData.Length == 0)
             return;
