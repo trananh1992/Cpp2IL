@@ -530,6 +530,11 @@ internal class Program
             result.PathToAssembly = options.ForcedBinaryPath!;
             result.PathToMetadata = options.ForcedMetadataPath!;
             result.UnityVersion = UnityVersion.Parse(options.ForcedUnityVersion!);
+
+            if (result.UnityVersion.Type == UnityVersionType.Alpha && result.UnityVersion.Build == 0)
+                //Map a0 to f1 - we assume the user simply didn't provide the final part of the version number
+                result.UnityVersion = new UnityVersion(result.UnityVersion.Major, result.UnityVersion.Minor, result.UnityVersion.Build, UnityVersionType.Final, 1);
+            
             result.Valid = true;
         }
 
