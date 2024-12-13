@@ -87,9 +87,9 @@ The release files can be downloaded from the Actions tab if you are signed into 
 which always point to the latest successful CI build. Note that the .NET Framework build is provided for compatibility with 
 wine/proton.
 
-- [Windows Native Build](https://nightly.link/SamboyCoding/Cpp2IL/workflows/dotnet-core/development/Cpp2IL-net6-win-x64.zip)
-- [Linux Native Build](https://nightly.link/SamboyCoding/Cpp2IL/workflows/dotnet-core/development/Cpp2IL-net6-linux-x64.zip)
-- [Mac Native Build](https://nightly.link/SamboyCoding/Cpp2IL/workflows/dotnet-core/development/Cpp2IL-net6-osx-x64.zip)
+- [Windows Native Build](https://nightly.link/SamboyCoding/Cpp2IL/workflows/dotnet-core/development/Cpp2IL-net9-win-x64.zip)
+- [Linux Native Build](https://nightly.link/SamboyCoding/Cpp2IL/workflows/dotnet-core/development/Cpp2IL-net9-linux-x64.zip)
+- [Mac Native Build](https://nightly.link/SamboyCoding/Cpp2IL/workflows/dotnet-core/development/Cpp2IL-net9-osx-x64.zip)
 - [.NET Framework 4.7.2 Windows Build](https://nightly.link/SamboyCoding/Cpp2IL/workflows/dotnet-core/development/Cpp2IL-Netframework472-Windows.zip)
 
 
@@ -113,28 +113,31 @@ If you do not wish for the output to be coloured, set the Environment Variable `
 
 ## Credits
 
-This application is built primarily using .NET 6.0, but a .NET Framework 4.7.2 build is also published for legacy purposes.
+This application is built primarily using .NET 9.0, but a .NET Framework 4.7.2 build is also published for legacy purposes.
 
 It uses the following libraries, for which I am very thankful:
 
 (All are MIT licensed aside from XUnit which is Apache 2.0+MIT)
 
 - [iced](https://github.com/icedland/iced) disassembler for x86
-- [Capstone.NET](https://github.com/9ee1/Capstone.NET) for ARMv8 and ARMv7 disassembly.
+- [Capstone.NET](https://github.com/ds5678/Capstone.NET) for ARMv8 and ARMv7 disassembly, though its usage is deprecated in favor of:
+- My own [Disarm](https://github.com/SamboyCoding/Disarm) library for fully-managed ARMv8/ARM64 disassembly.
 - My own WasmDisassembler library for WebAssembly disassembly. This can be found in the `WasmDisassembler` subdirectory.
 - [Pastel](https://github.com/silkfire/Pastel) for the console colours.
 - [CommandLineParser](https://github.com/commandlineparser/commandline) so I didn't need to write one myself.
 - [AsmResolver](https://github.com/Washi1337/AsmResolver) for any output formats which produce managed .NET assemblies.
 - [xUnit](https://github.com/xunit/xunit) for the unit tests.
-- [IndexRange](https://github.com/bgrainger/IndexRange) to port System.Index and System.Range back to netstandard2.0.
-- [Nullable](https://github.com/manuelroemer/Nullable) to port nullable attributes back to netstandard2.0.
+- [AssetRipper.CIL](https://github.com/AssetRipper/AssetRipper.CIL) for filling stub method bodies with IL that decompiles cleanly. 
+- [AssetRipper.Primitives](https://github.com/AssetRipper/AssetRipper.Primitives) for unity version handling.
 
-In addition to the above, the GUI Project uses:
-- [Avalonia](https://github.com/AvaloniaUI/Avalonia) as a GUI framework.
-- [AvaloniaEdit](https://github.com/AvaloniaUI/AvaloniaEdit/) for the text editor.
-- [TextMateSharp](https://github.com/danipen/TextMateSharp) for the syntax highlighting.
+The net472 build uses the following additional libraries:
+- [System.ValueTuple](https://www.nuget.org/packages/System.ValueTuple/) for value tuples in .NET Framework.
+- [PolySharp](https://github.com/Sergio0694/PolySharp/) (licensed under the MIT license) for polyfilling newer runtime features in .NET Framework.
 
-Finally, the OrbisPkg plugin uses [LibOrbisPkg](https://github.com/maxton/LibOrbisPkg), which is licensed under the LGPL, version 3.
+Some plugins also use additional libraries:
+- The OrbisPkg plugin uses [LibOrbisPkg](https://github.com/maxton/LibOrbisPkg), which is licensed under the LGPL, version 3.
+- The ControlFlowGraph plugin uses [DotNetGraph](https://github.com/vfrz/DotNetGraph), which is licensed under the MIT license, for creating dot files.
+- The Pdb plugin uses [AssetRipper.Bindings.MsPdbCore](https://github.com/AssetRipper/AssetRipper.Bindings.MsPdbCore), which is licensed under the MIT license.
 
 Cpp2IL is (very loosely, at this point) based off of [Il2CppDumper](https://github.com/Perfare/Il2CppDumper), which I forked
 in 2018 and removed a lot of code, rewrote a lot, and added a lot more. But at its core, it's still got some dumper left
@@ -147,6 +150,6 @@ I'd like to thank the Audica Modding community and Discord for the initial inspi
 in the early days, and feature requests these days.
 
 And finally, check out some other cool projects which link in with this one. Of course, I
-mentioned [Il2CppAssemblyUnhollower](https://github.com/knah/Il2CppAssemblyUnhollower/)
+mentioned [Il2CppInterop](https://github.com/BepInEx/Il2CppInterop/)
 further up, but also check out [MelonLoader](https://github.com/LavaGang/MelonLoader/), which uses Cpp2IL for Dummy DLL
 generation.
