@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AssetRipper.Primitives;
 using Cpp2IL.Core.Api;
 using Cpp2IL.Core.Exceptions;
 using Cpp2IL.Core.Il2CppApiFunctions;
@@ -29,6 +30,11 @@ public class ApplicationAnalysisContext : ContextWithDataStorage
     /// The version of the IL2CPP metadata file this application was loaded from.
     /// </summary>
     public float MetadataVersion => Metadata.MetadataVersion;
+    
+    /// <summary>
+    /// The Unity version this application was compiled with.
+    /// </summary>
+    public UnityVersion UnityVersion => Metadata.UnityVersion;
 
     /// <summary>
     /// The instruction set helper class associated with the instruction set that this application was compiled with.

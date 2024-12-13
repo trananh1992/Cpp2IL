@@ -15,6 +15,7 @@ public class Il2CppMetadata : ClassReadingBinaryReader
 {
     public const uint MetadataMagic = 0xFAB11BAF;
     public float MetadataVersion { get; }
+    public UnityVersion UnityVersion { get; }
     
     //Disable null check as this stuff is reflected.
     public Il2CppGlobalMetadataHeader metadataHeader;
@@ -121,11 +122,12 @@ public class Il2CppMetadata : ClassReadingBinaryReader
 
         LibLogger.InfoNewline($"\tUsing actual IL2CPP Metadata version {actualVersion}");
 
-        return new Il2CppMetadata(new MemoryStream(bytes), actualVersion);
+        return new Il2CppMetadata(new MemoryStream(bytes), unityVersion, actualVersion);
     }
 
-    private Il2CppMetadata(MemoryStream stream, float metadataVersion) : base(stream)
+    private Il2CppMetadata(MemoryStream stream, UnityVersion unityVersion, float metadataVersion) : base(stream)
     {
+        UnityVersion = unityVersion;
         MetadataVersion = metadataVersion;
         metadataHeader = ReadReadable<Il2CppGlobalMetadataHeader>();
         
