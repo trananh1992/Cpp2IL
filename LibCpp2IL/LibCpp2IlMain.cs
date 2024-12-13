@@ -218,17 +218,8 @@ public static class LibCpp2IlMain
     /// <returns>A valid unity version if one can be read, else 0.0.0a0</returns>
     public static UnityVersion DetermineUnityVersion(string? unityPlayerPath, string? gameDataPath)
     {
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT && !string.IsNullOrEmpty(unityPlayerPath))
-        {
-            LibLogger.VerboseNewline($"DetermineUnityVersion: Running on windows so have FileVersionInfo, trying to pull version from unity player {unityPlayerPath}");
-            var unityVer = FileVersionInfo.GetVersionInfo(unityPlayerPath);
-
-            if (unityVer.FileMajorPart > 0)
-                return new UnityVersion((ushort)unityVer.FileMajorPart, (ushort)unityVer.FileMinorPart, (ushort)unityVer.FileBuildPart);
-
-            LibLogger.VerboseNewline($"DetermineUnityVersion: FileVersionInfo gave useless result, falling back to other methods");
-        }
-
+        //We prefer pulling from assets because it gives a full version number (i.e. including what is usually an f1 at the end)
+        //But we can fall back to the unity player if we have to (and are on windows)
         if (!string.IsNullOrEmpty(gameDataPath))
         {
             LibLogger.VerboseNewline($"DetermineUnityVersion: Have game data path {gameDataPath}, trying to pull version from globalgamemanagers or data.unity3d");
@@ -254,6 +245,17 @@ public static class LibCpp2IlMain
             }
 
             LibLogger.VerboseNewline($"DetermineUnityVersion: No globalgamemanagers or data.unity3d found in game data path.");
+        }
+        
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT && !string.IsNullOrEmpty(unityPlayerPath))
+        {
+            LibLogger.VerboseNewline($"DetermineUnityVersion: Running on windows so have FileVersionInfo, trying to pull version from unity player {unityPlayerPath}");
+            var unityVer = FileVersionInfo.GetVersionInfo(unityPlayerPath);
+
+            if (unityVer.FileMajorPart > 0)
+                return new UnityVersion((ushort)unityVer.FileMajorPart, (ushort)unityVer.FileMinorPart, (ushort)unityVer.FileBuildPart);
+
+            LibLogger.VerboseNewline($"DetermineUnityVersion: FileVersionInfo gave useless result.");
         }
 
         LibLogger.VerboseNewline($"DetermineUnityVersion: All methods to determine unity version failed!");
