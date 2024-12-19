@@ -155,4 +155,6 @@ further up, but also check out [MelonLoader](https://github.com/LavaGang/MelonLo
 generation.
 
 
-Cpp2IL-2022.0.7-Windows.exe --game-path=C:\Path\To\Your\Game --just-give-me-dlls-asap-dammit
+1. Open command prompt
+2. cd ... (for example C:\Users\USER\Downloads\Tools)
+3. Cpp2IL-2022.0.7-Windows.exe --game-path=C:\Path\To\Your\Game --just-give-me-dlls-asap-dammit
