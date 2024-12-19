@@ -153,3 +153,6 @@ And finally, check out some other cool projects which link in with this one. Of 
 mentioned [Il2CppInterop](https://github.com/BepInEx/Il2CppInterop/)
 further up, but also check out [MelonLoader](https://github.com/LavaGang/MelonLoader/), which uses Cpp2IL for Dummy DLL
 generation.
+
+
+Cpp2IL-2022.0.7-Windows.exe --game-path=C:\Path\To\Your\Game --just-give-me-dlls-asap-dammit
